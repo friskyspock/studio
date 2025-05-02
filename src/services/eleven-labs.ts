@@ -72,29 +72,27 @@ export async function textToSpeech(text: string, options: ElevenLabsOptions): Pr
       let errorDetails = `HTTP error! Status: ${response.status}`;
       try {
         const errorJson = await response.json();
-        errorDetails += ` - ${errorJson.detail?.message || JSON.stringify(errorJson)}`;
-      } catch (e) {
+         errorDetails += ` - ${errorJson.detail || JSON.stringify(errorJson)}`;
+      } catch (error) {
         // If reading JSON fails, use the status text
+        console.error('Error parsing JSON response:', error);
         errorDetails += ` - ${response.statusText}`;
       }
        console.error("ElevenLabs API Error:", errorDetails);
-      throw new Error(errorDetails);
+       throw error instanceof Error ? error : new Error(`HTTP error! Status: ${response.status}`);
     }
-
+    
     // Check content type to ensure we received audio
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.startsWith('audio/')) {
-        console.error("ElevenLabs API Error: Unexpected content type received:", contentType);
         throw new Error(`Expected audio content type, but received ${contentType}`);
     }
 
     const audioBlob = await response.blob();
-    console.log(`ElevenLabs TTS successful, received blob size: ${audioBlob.size}, type: ${audioBlob.type}`);
     return audioBlob;
-
-  } catch (error) {
-    console.error('Error calling ElevenLabs API:', error);
+  } catch (e) {
+    console.error('Error calling ElevenLabs API:', e);
     // Re-throw the error to be handled by the calling component
-    throw error instanceof Error ? error : new Error('An unknown error occurred during text-to-speech.');
+    throw e instanceof Error ? e : new Error('An unknown error occurred during text-to-speech.');
   }
 }
