@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils';
 // --- Configuration ---
 // Replace with your actual WebSocket endpoint URL
 const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:5001/p1/ws'; // Default for local dev
+console.log(`[${new Date().toISOString()}] WebSocket URL configured as: ${WEBSOCKET_URL}`);
+console.log(`[${new Date().toISOString()}] Environment variable NEXT_PUBLIC_WEBSOCKET_URL: ${process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'not set'}`);
+
 // Replace with your actual ElevenLabs API Key and Voice ID
 const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
 const ELEVENLABS_VOICE_ID = process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Example Voice ID
@@ -28,10 +31,11 @@ const ChatInterface: React.FC = () => {
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
   // --- WebSocket Hook ---
-  const { status: wsStatus, sendMessage: sendWsMessage } = useWebSocket({
+  const { status: wsStatus, sendMessage: sendWsMessage, forceReconnect } = useWebSocket({
     url: WEBSOCKET_URL,
     onMessage: (event) => {
       try {
@@ -263,13 +267,42 @@ const ChatInterface: React.FC = () => {
                wsStatus === WebSocketStatus.Connecting && "bg-yellow-100 text-yellow-800",
                (wsStatus === WebSocketStatus.Closed || wsStatus === WebSocketStatus.Error || wsStatus === WebSocketStatus.Closing) && "bg-red-100 text-red-800"
            )}>
-               {wsStatus}
+               {wsStatus === WebSocketStatus.Connecting ? "Connecting..." :
+                wsStatus === WebSocketStatus.Open ? "Connected" : "Disconnected"}
            </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 p-0 overflow-hidden">
         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
-          {messages.length === 0 ? (
+          {wsStatus !== WebSocketStatus.Open ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <p className="text-center text-destructive font-medium mb-2">
+                {wsStatus === WebSocketStatus.Connecting ?
+                  "Connecting to AI service..." :
+                  "Not connected to AI service"}
+              </p>
+              <p className="text-center text-muted-foreground text-sm max-w-md mb-4">
+                {wsStatus === WebSocketStatus.Connecting ?
+                  "Please wait while we establish a connection..." :
+                  "The AI service appears to be offline. Please check that the WebSocket server is running at " + WEBSOCKET_URL}
+              </p>
+              {wsStatus !== WebSocketStatus.Connecting && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Reconnecting",
+                      description: "Attempting to reconnect to the WebSocket server...",
+                    });
+                    forceReconnect();
+                  }}
+                >
+                  Try to Reconnect
+                </Button>
+              )}
+            </div>
+          ) : messages.length === 0 ? (
             <p className="text-center text-muted-foreground mt-4">
               Start the conversation by typing or using the microphone.
             </p>
