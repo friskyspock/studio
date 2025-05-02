@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 // --- Configuration ---
 // Replace with your actual WebSocket endpoint URL
-const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080'; // Default for local dev
+const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:5001/p1/ws'; // Default for local dev
 // Replace with your actual ElevenLabs API Key and Voice ID
 const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
 const ELEVENLABS_VOICE_ID = process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Example Voice ID
